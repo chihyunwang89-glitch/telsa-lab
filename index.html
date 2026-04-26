@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HP Telsa Research Hub</title>
+  <meta name="description" content="HP Telsa Research Hub — 每月深度研究 Dashboard">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'hp-blue': '#0096D6',
+            'hp-dark': '#001A33',
+            'hp-accent': '#0073A8',
+            'hp-bg': '#F7F9FC',
+            'hp-border': '#E2E8F0',
+            'hp-card': '#FFFFFF',
+            'hp-muted': '#6B7C8D',
+            'hp-sub': '#4A5B6C',
+          },
+          fontFamily: {
+            'sans': ['Inter', 'system-ui', 'sans-serif'],
+            'mono': ['Geist Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    .star { color: #F5A623; }
+    .star-empty { color: #E2E8F0; }
+    .type-paper { background: #E8F4FA; color: #0096D6; }
+    .type-product { background: #FFF3E0; color: #E65100; }
+    .type-tool { background: #E8F5E9; color: #2E7D32; }
+    .subtopic-tag { background: #F0F0F5; color: #4A5B6C; }
+    .filter-active { background: #0096D6; color: white; }
+    .filter-inactive { background: transparent; border: 1px solid #E2E8F0; color: #4A5B6C; }
+    .nav-active { background: #D6EEFB; border: 2px solid #0096D6; }
+    .insight-card { background: #FFFBF0; border: 1px solid rgba(245, 217, 128, 0.25); }
+    .bar-cognitive { background: #0096D6; }
+    .bar-product { background: #E65100; }
+    .bar-tool { background: #2E7D32; }
+    .bar-theory { background: #7C3AED; }
+    .bar-safety { background: #DC2626; }
+    .bar-default { background: #6B7C8D; }
+    body { background: #F7F9FC; }
+    .expand-btn:hover { opacity: 0.8; }
+    .card-hover:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.08); }
+    @media (max-width: 1023px) {
+      .sidebar { display: none !important; }
+      .sidebar.open { display: flex !important; position: fixed; top: 0; left: 0; z-index: 50; height: 100vh; width: 240px; }
+      .mobile-menu { display: flex !important; }
+    }
+    @media (min-width: 1024px) {
+      .mobile-menu { display: none !important; }
+    }
+  </style>
+</head>
+<body class="font-sans text-hp-dark">
+
+  <!-- Mobile Header -->
+  <div class="mobile-menu hidden lg:hidden fixed top-0 left-0 right-0 bg-white border-b border-hp-border z-40 px-4 py-3 items-center justify-between">
+    <button id="menuBtn" class="p-2 rounded-lg hover:bg-gray-100">
+      <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
+    <span class="font-black text-lg">TELSA LAB</span>
+    <div class="w-10"></div>
+  </div>
+
+  <!-- Overlay -->
+  <div id="overlay" class="hidden fixed inset-0 bg-black/30 z-40 lg:hidden" onclick="closeSidebar()"></div>
+
+  <!-- Main Layout -->
+  <div class="flex min-h-screen">
+
+    <!-- Sidebar -->
+    <aside id="sidebar" class="sidebar w-[200px] bg-white border-r border-hp-border flex flex-col p-6 gap-4 shrink-0">
+      <div class="flex items-center gap-2.5">
+        <svg class="w-7 h-7 text-hp-blue" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 2a10 10 0 0 1 0 20" fill="currentColor" opacity="0.3"/></svg>
+        <span class="text-2xl font-black text-hp-dark">每月一題</span>
+      </div>
+      <p class="text-xs text-hp-muted tracking-wider">Monthly deep-dive</p>
+      <hr class="border-hp-border">
+      <p id="yearLabel" class="text-sm font-bold text-hp-muted tracking-widest font-mono">2026</p>
+      <nav id="navList" class="flex flex-col gap-1.5"></nav>
+      <div class="flex-1"></div>
+      <div class="border-t border-hp-border pt-4 space-y-1">
+        <p class="text-[10px] text-hp-muted tracking-wide">Powered by</p>
+        <p class="text-xs font-bold text-hp-blue">HP Telsa Research Hub</p>
+        <p class="text-[10px] text-hp-muted">Built by Sally Wang</p>
+        <p class="text-[10px] text-hp-muted">sally.wang@hp.com</p>
+      </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="flex-1 flex flex-col min-w-0 lg:mt-0 mt-14">
+
+      <!-- Hero -->
+      <header id="heroSection" class="border-b border-hp-border" style="background: linear-gradient(135deg, #E8F4FA 0%, #F0F7FC 50%, #F7F9FC 100%);">
+        <div class="bg-hp-dark rounded-xl mx-6 mt-4 mb-3 px-6 py-3 lg:rounded-none lg:mx-0 lg:mt-0 lg:rounded-b-xl">
+          <h1 class="text-3xl lg:text-4xl font-black text-white tracking-[6px]">TELSA LAB</h1>
+          <p class="text-sm font-semibold text-blue-300 tracking-wide">HP Telsa Research Hub — 每月深度研究</p>
+        </div>
+        <div class="px-6 lg:px-8 pb-3 space-y-2">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <span id="badgeMonth" class="inline-flex items-center gap-2 px-4 py-1 rounded-full bg-hp-blue/15 border-2 border-hp-blue text-hp-blue text-sm font-bold">
+              <span class="w-2 h-2 rounded-full bg-hp-blue"></span>
+              <span id="badgeText">2026年 5月號</span>
+            </span>
+            <span id="curatorBadge" class="text-sm text-hp-sub">統整人：<span id="curatorName" class="font-semibold">Alice</span></span>
+          </div>
+          <h2 id="themeTitle" class="text-2xl lg:text-4xl font-black text-hp-blue">Dual Screen</h2>
+          <div class="w-16 h-1 bg-hp-blue rounded"></div>
+          <p id="themeSub" class="text-base lg:text-lg font-bold text-hp-dark leading-relaxed">雙螢幕工作流為什麼還沒被 AI 工具取代？</p>
+        </div>
+      </header>
+
+      <!-- Content Area -->
+      <div class="flex-1 flex flex-col lg:flex-row gap-5 p-4 lg:p-6 overflow-auto">
+
+        <!-- Left Column -->
+        <div class="flex-1 flex flex-col gap-4 min-w-0">
+          <!-- Stats Row -->
+          <div id="statsRow" class="grid grid-cols-3 gap-3"></div>
+
+          <!-- Section Header -->
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <svg class="w-5 h-5 text-hp-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+              <h3 class="text-lg font-extrabold text-hp-dark">研究素材</h3>
+              <span id="materialCount" class="text-sm text-hp-muted">共 8 篇</span>
+            </div>
+            <div id="filterRow" class="flex gap-1.5 flex-wrap"></div>
+          </div>
+
+          <!-- Cards -->
+          <div id="cardsContainer" class="flex flex-col gap-2 overflow-auto"></div>
+
+          <!-- Expand Button -->
+          <div id="expandCardsBtn" class="hidden">
+            <button onclick="toggleCards()" class="expand-btn w-full flex items-center justify-center gap-1.5 py-1.5 rounded-full bg-blue-50 text-hp-blue text-xs font-semibold hover:bg-blue-100 transition-colors cursor-pointer">
+              <svg id="expandIcon" class="w-3.5 h-3.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+              <span id="expandText">展開更多素材</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Right Column -->
+        <div class="w-full lg:w-[380px] flex flex-col gap-4 shrink-0">
+          <!-- Insights -->
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-yellow-500" fill="currentColor" viewBox="0 0 24 24"><path d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"/></svg>
+              <h3 class="text-base font-extrabold text-hp-dark">本月核心洞察</h3>
+            </div>
+            <div id="insightsContainer" class="flex flex-col gap-2"></div>
+          </div>
+
+          <!-- Subtopic Chart -->
+          <div class="flex flex-col gap-2">
+            <div class="flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-hp-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+              <h3 class="text-base font-extrabold text-hp-dark">子主題分布</h3>
+            </div>
+            <div id="chartContainer" class="bg-white rounded-lg border border-hp-border p-3 space-y-2"></div>
+          </div>
+
+          <!-- Podcast -->
+          <div id="podcastSection" class="flex flex-col gap-2">
+            <div class="flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"/></svg>
+              <h3 class="text-base font-extrabold text-hp-dark">本月 Podcast</h3>
+            </div>
+            <div id="podcastCard" class="bg-white rounded-lg border border-hp-border flex overflow-hidden"></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
