@@ -13,7 +13,93 @@ let allData = [];
 let currentMonth = null;
 let currentFilter = 'all';
 let cardsExpanded = false;
+let currentLang = 'zh';
 const MAX_CARDS_COLLAPSED = 3;
+
+// ==========================================
+// i18n Translations
+// ==========================================
+const I18N = {
+  zh: {
+    sidebarTitle: '每月一題',
+    sidebarSub: 'Monthly deep-dive',
+    heroSubtitle: 'HP Telsa Research Hub — 每月深度研究',
+    badgeMonth: (y, m) => `${y}年 ${m}月號`,
+    curatorLabel: '統整人',
+    sectionMaterials: '研究素材',
+    sectionInsights: '本月核心洞察',
+    sectionChart: '子主題分布',
+    sectionPodcast: '本月 Podcast',
+    statMaterials: '研究素材',
+    statSubtopics: '子主題',
+    statInsights: '核心洞察',
+    filterAll: '全部',
+    materialCount: (n) => `共 ${n} 篇`,
+    chartCount: (n) => `${n} 篇`,
+    source: '原始來源',
+    mediumBtn: 'Medium 筆記',
+    expandMore: (n) => `展開更多素材（共 ${n} 篇）`,
+    collapse: '收合素材',
+    noInsight: '本月暫無核心洞察',
+    loadError: '無法載入資料。請確認 Google Sheet 已發佈。',
+    typeMap: { '論文': '論文', '產品觀察': '產品觀察', '工具測試': '工具測試' },
+    monthLabel: (m) => `${m}月`,
+  },
+  en: {
+    sidebarTitle: 'Monthly Topic',
+    sidebarSub: 'Monthly deep-dive',
+    heroSubtitle: 'HP Telsa Research Hub — Monthly Deep Research',
+    badgeMonth: (y, m) => `${y} Issue ${m}`,
+    curatorLabel: 'Curator',
+    sectionMaterials: 'Research Materials',
+    sectionInsights: 'Key Insights',
+    sectionChart: 'Subtopic Distribution',
+    sectionPodcast: 'Monthly Podcast',
+    statMaterials: 'Materials',
+    statSubtopics: 'Subtopics',
+    statInsights: 'Insights',
+    filterAll: 'All',
+    materialCount: (n) => `${n} articles`,
+    chartCount: (n) => `${n}`,
+    source: 'Source',
+    mediumBtn: 'Medium Post',
+    expandMore: (n) => `Show more (${n} total)`,
+    collapse: 'Show less',
+    noInsight: 'No insights this month',
+    loadError: 'Failed to load data. Please check Google Sheet.',
+    typeMap: { '論文': 'Paper', '產品觀察': 'Product', '工具測試': 'Tool' },
+    monthLabel: (m) => `${['', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][m]}`,
+  }
+};
+
+function t(key) { return I18N[currentLang][key]; }
+
+function toggleLang() {
+  currentLang = currentLang === 'zh' ? 'en' : 'zh';
+  // Update toggle button style
+  const zhEl = document.getElementById('langZh');
+  const enEl = document.getElementById('langEn');
+  if (currentLang === 'zh') {
+    zhEl.className = 'text-xs font-bold text-white';
+    enEl.className = 'text-xs font-bold text-white/50';
+  } else {
+    zhEl.className = 'text-xs font-bold text-white/50';
+    enEl.className = 'text-xs font-bold text-white';
+  }
+  // Update static labels
+  document.getElementById('sidebarTitle').textContent = t('sidebarTitle');
+  document.getElementById('sidebarSub').textContent = t('sidebarSub');
+  document.getElementById('heroSubtitle').textContent = t('heroSubtitle');
+  document.getElementById('sectionMaterials').textContent = t('sectionMaterials');
+  document.getElementById('sectionInsights').textContent = t('sectionInsights');
+  document.getElementById('sectionChart').textContent = t('sectionChart');
+  document.getElementById('sectionPodcast').textContent = t('sectionPodcast');
+  document.getElementById('curatorLabel').textContent = t('curatorLabel');
+  // Re-render dynamic content
+  const months = [...new Set(allData.map(r => r.month))].sort().reverse();
+  renderNav(months);
+  renderMonth();
+}
 
 // Subtopic color map
 const SUBTOPIC_COLORS = {
@@ -54,7 +140,7 @@ async function loadData() {
     } catch (e2) {
       console.error('All data sources failed:', e2);
       document.getElementById('cardsContainer').innerHTML =
-        '<p class="text-center text-hp-muted py-8">無法載入資料。請確認 Google Sheet 已發佈。</p>';
+        `<p class="text-center text-hp-muted py-8">${t('loadError')}</p>`;
     }
   }
 }
@@ -86,7 +172,7 @@ function renderNav(months) {
         class="flex flex-col px-4 py-2.5 rounded-lg text-left transition-all cursor-pointer
           ${isActive ? 'nav-active' : 'hover:bg-gray-50'}"
         data-month="${m}">
-        <span class="text-base ${isActive ? 'font-extrabold text-hp-dark' : 'font-semibold text-gray-700'}">${monthNum}月</span>
+        <span class="text-base ${isActive ? 'font-extrabold text-hp-dark' : 'font-semibold text-gray-700'}">${t('monthLabel')(monthNum)}</span>
         <span class="text-xs ${isActive ? 'font-semibold text-hp-accent' : 'text-hp-muted'}">${theme}</span>
       </button>`;
   }).join('');
@@ -114,7 +200,7 @@ function renderMonth() {
   const year = currentMonth.split('-')[0];
 
   // Hero
-  document.getElementById('badgeText').textContent = `${year}年 ${monthNum}月號`;
+  document.getElementById('badgeText').textContent = t('badgeMonth')(year, monthNum);
   document.getElementById('themeTitle').textContent = first.theme || '';
   document.getElementById('themeSub').textContent = first.why_this_month || '';
   document.getElementById('curatorName').textContent = first.curator_name || '';
@@ -153,7 +239,7 @@ function renderStats(total, subtopicCount, insightCount) {
       </div>
       <div class="flex items-end gap-1.5">
         <span class="text-3xl lg:text-4xl font-black font-mono text-hp-dark">${total}</span>
-        <span class="text-sm font-bold text-hp-dark pb-1">研究素材</span>
+        <span class="text-sm font-bold text-hp-dark pb-1">${t('statMaterials')}</span>
       </div>
     </div>
     <div class="bg-white rounded-xl border border-hp-border p-3 flex items-center gap-3">
@@ -162,7 +248,7 @@ function renderStats(total, subtopicCount, insightCount) {
       </div>
       <div class="flex items-end gap-1.5">
         <span class="text-3xl lg:text-4xl font-black font-mono text-hp-dark">${subtopicCount}</span>
-        <span class="text-sm font-bold text-hp-dark pb-1">子主題</span>
+        <span class="text-sm font-bold text-hp-dark pb-1">${t('statSubtopics')}</span>
       </div>
     </div>
     <div class="bg-white rounded-xl border border-hp-border p-3 flex items-center gap-3">
@@ -171,7 +257,7 @@ function renderStats(total, subtopicCount, insightCount) {
       </div>
       <div class="flex items-end gap-1.5">
         <span class="text-3xl lg:text-4xl font-black font-mono text-hp-dark">${insightCount}</span>
-        <span class="text-sm font-bold text-hp-dark pb-1">核心洞察</span>
+        <span class="text-sm font-bold text-hp-dark pb-1">${t('statInsights')}</span>
       </div>
     </div>`;
 }
@@ -182,10 +268,11 @@ function renderStats(total, subtopicCount, insightCount) {
 function renderFilters(types) {
   const row = document.getElementById('filterRow');
   row.innerHTML = `
-    <button onclick="setFilter('all')" class="px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${currentFilter === 'all' ? 'filter-active' : 'filter-inactive'}">全部</button>
-    ${types.map(t => `
-      <button onclick="setFilter('${t}')" class="px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${currentFilter === t ? 'filter-active' : 'filter-inactive'}">${t}</button>
-    `).join('')}`;
+    <button onclick="setFilter('all')" class="px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${currentFilter === 'all' ? 'filter-active' : 'filter-inactive'}">${t('filterAll')}</button>
+    ${types.map(tp => {
+      const label = t('typeMap')[tp] || tp;
+      return `<button onclick="setFilter('${tp}')" class="px-3 py-1 rounded-full text-xs font-semibold transition-colors cursor-pointer ${currentFilter === tp ? 'filter-active' : 'filter-inactive'}">${label}</button>`;
+    }).join('')}`;
 }
 
 function setFilter(type) {
@@ -206,7 +293,7 @@ function renderCards(rows) {
   const showAll = cardsExpanded || total <= MAX_CARDS_COLLAPSED;
   const visible = showAll ? filtered : filtered.slice(0, MAX_CARDS_COLLAPSED);
 
-  document.getElementById('materialCount').textContent = `共 ${total} 篇`;
+  document.getElementById('materialCount').textContent = t('materialCount')(total);
 
   const container = document.getElementById('cardsContainer');
   container.innerHTML = visible.map(row => {
@@ -216,7 +303,7 @@ function renderCards(rows) {
       <div class="bg-white rounded-lg border border-hp-border p-4 space-y-2 card-hover transition-shadow cursor-default">
         <div class="flex items-center justify-between">
           <div class="flex gap-2">
-            <span class="px-2.5 py-0.5 rounded text-xs font-semibold ${typeClass}">${row.type || ''}</span>
+            <span class="px-2.5 py-0.5 rounded text-xs font-semibold ${typeClass}">${t('typeMap')[row.type] || row.type || ''}</span>
             <span class="px-2.5 py-0.5 rounded text-xs font-medium subtopic-tag">${row.subtopic || ''}</span>
           </div>
           <span class="text-sm">${stars}</span>
@@ -226,7 +313,7 @@ function renderCards(rows) {
         <div class="flex gap-2">
           ${row.source_url ? `<a href="${row.source_url}" target="_blank" rel="noopener" class="inline-flex items-center gap-1 px-3 py-1 rounded-md bg-hp-blue text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer">
             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/></svg>
-            原始來源</a>` : ''}
+            ${t('source')}</a>` : ''}
         </div>
       </div>`;
   }).join('');
@@ -236,8 +323,8 @@ function renderCards(rows) {
   if (total > MAX_CARDS_COLLAPSED) {
     btn.classList.remove('hidden');
     document.getElementById('expandText').textContent = showAll
-      ? '收合素材'
-      : `展開更多素材（共 ${total} 篇）`;
+      ? t('collapse')
+      : t('expandMore')(total);
     document.getElementById('expandIcon').style.transform = showAll ? 'rotate(180deg)' : '';
   } else {
     btn.classList.add('hidden');
@@ -266,7 +353,7 @@ function renderInsights(rows, mediumUrl) {
   const container = document.getElementById('insightsContainer');
 
   if (!insights.length) {
-    container.innerHTML = '<p class="text-sm text-hp-muted">本月暫無核心洞察</p>';
+    container.innerHTML = `<p class="text-sm text-hp-muted">${t('noInsight')}</p>`;
     return;
   }
 
@@ -279,7 +366,7 @@ function renderInsights(rows, mediumUrl) {
     <a href="${mediumUrl}" target="_blank" rel="noopener"
       class="inline-flex items-center justify-center gap-1 px-4 py-1.5 rounded-lg bg-[#1A8917] text-white text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer">
       <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M13.54 12a6.8 6.8 0 01-6.77 6.82A6.8 6.8 0 010 12a6.8 6.8 0 016.77-6.82A6.8 6.8 0 0113.54 12zm7.42 0c0 3.54-1.51 6.42-3.38 6.42-1.87 0-3.39-2.88-3.39-6.42s1.52-6.42 3.39-6.42 3.38 2.88 3.38 6.42M24 12c0 3.17-.53 5.75-1.19 5.75-.66 0-1.19-2.58-1.19-5.75s.53-5.75 1.19-5.75C23.47 6.25 24 8.83 24 12z"/></svg>
-      Medium 筆記
+      ${t('mediumBtn')}
     </a>` : '');
 }
 
@@ -301,7 +388,7 @@ function renderChart(rows) {
       <div class="space-y-1">
         <div class="flex justify-between text-xs">
           <span class="font-semibold text-hp-dark">${name}</span>
-          <span class="text-hp-muted">${count} 篇</span>
+          <span class="text-hp-muted">${t('chartCount')(count)}</span>
         </div>
         <div class="w-full h-1.5 rounded-full bg-gray-100">
           <div class="h-1.5 rounded-full ${colorClass}" style="width:${width}%"></div>
